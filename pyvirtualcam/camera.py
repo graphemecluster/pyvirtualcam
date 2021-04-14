@@ -105,7 +105,8 @@ def register_backend(name: str, clazz):
     BACKENDS[name] = clazz
 
 if platform.system() == 'Windows':
-    from pyvirtualcam import _native_windows_obs
+    from pyvirtualcam import _native_windows_obs, _native_windows_argbcam
+    register_backend('argbcam', _native_windows_argbcam.CameraARGB)
     register_backend('obs', _native_windows_obs.Camera)
 elif platform.system() == 'Darwin':
     from pyvirtualcam import _native_macos_obs
@@ -131,6 +132,9 @@ class PixelFormat(Enum):
     GRAY = 'J400'
     """ Shape: ``(h,w)`` """
 
+    ARGB = 'ARGB'
+    """ Shape: ``(h,w,4)`` """
+
     I420 = 'I420'
     """ Shape: any of size ``w * h * 3/2`` """
 
@@ -153,6 +157,7 @@ FrameShapes = {
     PixelFormat.RGB: lambda w, h: (h, w, 3),
     PixelFormat.BGR: lambda w, h: (h, w, 3),
     PixelFormat.GRAY: lambda w, h: (h, w),
+    PixelFormat.ARGB: lambda w, h: (h, w, 4),
     PixelFormat.I420: lambda w, h: w * h * 3 // 2,
     PixelFormat.NV12: lambda w, h: w * h * 3 // 2,
     PixelFormat.YUYV: lambda w, h: w * h * 2,
@@ -171,6 +176,7 @@ class Camera:
         Built-in backends:
 
         - ``v4l2loopback`` (Linux): ``/dev/video<n>``
+        - ``argbcam`` (Windows): ``ARGB Camera``
         - ``obs`` (macOS/Windows): ``OBS Virtual Camera``
     :param backend: The virtual camera backend to use.
         If ``None``, all available backends are tried.
@@ -185,7 +191,7 @@ class Camera:
         Note that the built-in backends do not have extra arguments.
     """
     def __init__(self, width: int, height: int, fps: float, *,
-                 fmt: PixelFormat=PixelFormat.RGB,
+                 fmt: PixelFormat=PixelFormat.ARGB,
                  device: Optional[str]=None,
                  backend: Optional[str]=None,
                  print_fps: bool=False,
@@ -338,6 +344,8 @@ class Camera:
             
             print(s)
         
+        if self.backend == 'argbcam':
+            frame = np.flip(frame, axis=0)
         frame = np.array(frame.reshape(-1), copy=False, order='C')
         self._backend.send(frame)
         

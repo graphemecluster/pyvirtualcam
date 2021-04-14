@@ -25,6 +25,14 @@ common_inc = [get_pybind_include(), 'external/libyuv/include']
 
 if platform.system() == 'Windows':
     ext_modules.append(
+        Extension('pyvirtualcam._native_windows_argbcam',
+            sorted(['pyvirtualcam/native_windows_argbcam/main.cpp'] + common_src),
+            include_dirs=['pyvirtualcam/native_windows_argbcam'] + common_inc,
+            extra_link_args=["/DEFAULTLIB:advapi32.lib"],
+            language='c++'
+        )
+    )
+    ext_modules.append(
         Extension('pyvirtualcam._native_windows_obs',
             # Sort input source files to ensure bit-for-bit reproducible builds
             # (https://github.com/pybind/python_example/pull/53)
